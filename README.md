@@ -88,7 +88,19 @@ practice we found that 10 steps gives comparable quality on many cases, so the
 video demo commands below pass `--num_inference_steps 10` to keep them fast.
 Drop that flag to reproduce the paper setting.
 
+All our experiments were conducted on NVIDIA A100 80GB GPUs. For GPUs with less
+VRAM, all four inference scripts accept `--num_persistent_param_in_dit 0` to
+stream DiT weights from CPU. This is substantially slower and does not guarantee
+that every resolution or video configuration will fit on a 24GB GPU. Omitting
+the option keeps the existing adaptive VRAM caching behavior. A positive integer
+sets a DiT parameter-count budget for resident modules (not bytes or GB).
+
 ### Video (MP4 or image folder)
+
+This script processes only the first `--num_frames` frames (default: 33) and
+prints a warning when the input is longer. For full-length processing, use the
+long-video script below; extract MP4 inputs to a PNG frame folder first.
+Both video scripts enable exposure masks by default.
 
 ```bash
 # From MP4 file

@@ -14,6 +14,7 @@ import os
 import sys
 import math
 import argparse
+from utils.inference_args import add_vram_argument
 
 import numpy as np
 import pyexr
@@ -101,6 +102,7 @@ def make_overexposure_mask(srgb_chw, over_thr=0.95, no_morph=False):
 # ──────────────────────────── argparse ────────────────────────────
 def parse_args():
     p = argparse.ArgumentParser(description="HDRI: LDR panorama -> HDR EXR")
+    add_vram_argument(p)
     p.add_argument("--input_path", type=str, required=True,
                    help="Path to a single LDR panorama (PNG/JPG)")
     p.add_argument("--output_dir", type=str, required=True)
@@ -153,7 +155,10 @@ def main():
     # ── 2. Load LoRA weights ──────────────────────────────────────
     print(f"Loading LoRA from {args.lora_path} ...")
     pipe.load_lora(pipe.vace, args.lora_path, alpha=1)
-    pipe.enable_vram_management(vae_dtype=torch.float32)
+    pipe.enable_vram_management(
+        vae_dtype=torch.float32,
+        num_persistent_param_in_dit=args.num_persistent_param_in_dit,
+    )
 
     # ── 3. Load input image ───────────────────────────────────────
     print(f"Loading input from {args.input_path} ...")

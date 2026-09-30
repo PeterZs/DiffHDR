@@ -12,6 +12,7 @@ Usage examples:
 import os
 import sys
 import argparse
+from utils.inference_args import add_vram_argument
 
 import torch
 import numpy as np
@@ -117,7 +118,15 @@ def load_frames(
     else:
         raise FileNotFoundError(f"input_path not found: {input_path}")
 
-    n = min(len(vd), num_frames)
+    total_frames = len(vd)
+    if total_frames > num_frames:
+        print(
+            f"[warn] Input has {total_frames} frames; processing only the first {num_frames}. "
+            "For full-length processing, use infer_long_video.py with a PNG frame folder "
+            "(extract video files to PNG frames first).",
+            file=sys.stderr,
+        )
+    n = min(total_frames, num_frames)
     return [vd[i] for i in range(n)]
 
 
@@ -204,6 +213,7 @@ def prepare_video_and_masks(
 # ──────────────────────────── argparse ────────────────────────────
 def parse_args():
     p = argparse.ArgumentParser(description="DiffHDR: LDR video -> HDR EXR frames")
+    add_vram_argument(p)
     p.add_argument("--input_path", type=str, required=True,
                    help="Path to a folder of PNG frames OR an .mp4 video file")
     p.add_argument("--output_dir", type=str, required=True,
@@ -220,7 +230,9 @@ def parse_args():
     # Shape / generation
     p.add_argument("--height", type=int, default=720)
     p.add_argument("--width", type=int, default=1280)
-    p.add_argument("--num_frames", type=int, default=33)
+    p.add_argument("--num_frames", type=int, default=33,
+                   help="Process only the first N frames in a single pass (default: 33). "
+                        "Use infer_long_video.py for full-length processing.")
     p.add_argument("--cfg_scale", type=float, default=1.0)
     p.add_argument("--num_inference_steps", type=int, default=50)
     p.add_argument("--seed", type=int, default=10)
@@ -289,7 +301,10 @@ def main():
     # ── 2. Load LoRA weights ──────────────────────────────────────
     print(f"Loading LoRA from {args.lora_path} ...")
     pipe.load_lora(pipe.vace, args.lora_path, alpha=1)
-    pipe.enable_vram_management(vae_dtype=torch.float32)
+    pipe.enable_vram_management(
+        vae_dtype=torch.float32,
+        num_persistent_param_in_dit=args.num_persistent_param_in_dit,
+    )
 
     # ── 3. Load input frames ─────────────────────────────────────
     print(f"Loading input from {args.input_path} ...")

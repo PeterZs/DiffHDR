@@ -14,6 +14,7 @@ Usage:
 
 import os
 import argparse
+from utils.inference_args import add_vram_argument
 
 import torch
 import numpy as np
@@ -157,6 +158,7 @@ def load_and_replicate_image(
 # ──────────────────────────── argparse ────────────────────────────
 def parse_args():
     p = argparse.ArgumentParser(description="DiffHDR: single LDR image -> HDR EXR frames")
+    add_vram_argument(p)
     p.add_argument("--input_path", type=str, required=True,
                    help="Path to a single PNG or JPG image")
     p.add_argument("--output_dir", type=str, required=True,
@@ -224,7 +226,10 @@ def main():
     # ── 2. Load LoRA weights ──────────────────────────────────────
     print(f"Loading LoRA from {args.lora_path} ...")
     pipe.load_lora(pipe.vace, args.lora_path, alpha=1)
-    pipe.enable_vram_management(vae_dtype=torch.float32)
+    pipe.enable_vram_management(
+        vae_dtype=torch.float32,
+        num_persistent_param_in_dit=args.num_persistent_param_in_dit,
+    )
 
     # ── 3. Resolve resolution and num_frames ────────────────────────
     if not args.crop_and_resize:

@@ -18,6 +18,7 @@ Usage:
 """
 
 import argparse
+from utils.inference_args import add_vram_argument
 import os
 import sys
 
@@ -263,6 +264,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Long-video HDR inference with sliding-window blending."
     )
+    add_vram_argument(parser)
 
     # I/O
     parser.add_argument(
@@ -330,7 +332,7 @@ def parse_args():
     )
     parser.add_argument("--max_frames", type=int, default=None,
                         help="Limit total frames processed (default: all).")
-    parser.add_argument("--add_mask", action="store_true", default=False)
+    parser.add_argument("--add_mask", action="store_true", default=True)
     parser.add_argument("--use_under_exposure_mask", action="store_true", default=False)
     parser.add_argument("--crop_and_resize", action="store_true", default=False)
     parser.add_argument("--over_luma_thr_srgb", type=float, default=0.95)
@@ -428,7 +430,10 @@ def main():
     )
     print(f"Loading LoRA from {args.lora_path}")
     pipe.load_lora(pipe.vace, args.lora_path, alpha=1)
-    pipe.enable_vram_management(vae_dtype=torch.float32)
+    pipe.enable_vram_management(
+        vae_dtype=torch.float32,
+        num_persistent_param_in_dit=args.num_persistent_param_in_dit,
+    )
     print("Model loaded.")
 
     # ------------------------------------------------------------------
